@@ -4,8 +4,10 @@ import (
 	"context"
 	"flag"
 	"log/slog"
+	"math/rand"
 	"os"
 	"payroll-summary/cmd/repo"
+	"strconv"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
@@ -17,6 +19,7 @@ func main() {
 	dsn := flag.String("dsn", "", "Postgres dsn")
 	numWorkers := flag.Int("num_workers", 1000, "Number of workers to add")
 	numCrews := flag.Int("num_crews", 20, "Number of workers to add")
+	shouldCreatePayrolls := flag.Bool("should_create_payrolls", true, "Whether or not to create new payrolls")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
@@ -44,29 +47,39 @@ func main() {
 	}
 	logger.Info("Crews created", slog.Int("num_crews", *numCrews))
 
-	startTime := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
-	endTime := startTime.AddDate(1, 0, 0)
+	if *shouldCreatePayrolls {
 
-	err = createMonthlyPayrolls(queries, startTime, endTime)
+		startTime := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+		endTime := startTime.AddDate(1, 0, 0)
+
+		err = createMonthlyPayrolls(queries, startTime, endTime)
+		if err != nil {
+			logger.Error(err.Error())
+			os.Exit(1)
+		}
+		logger.Info("Monthly payrolls created")
+
+		err = createBiweeklyPayrolls(queries, startTime, endTime)
+		if err != nil {
+			logger.Error(err.Error())
+			os.Exit(1)
+		}
+		logger.Info("Biweekly payrolls created")
+
+		err = createWeeklyPayrolls(queries, startTime, endTime)
+		if err != nil {
+			logger.Error(err.Error())
+			os.Exit(1)
+		}
+		logger.Info("Weekly payrolls created")
+	}
+
+	err = createEarnings(queries, logger)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
-	logger.Info("Monthly payrolls created")
-
-	err = createBiweeklyPayrolls(queries, startTime, endTime)
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
-	logger.Info("Biweekly payrolls created")
-
-	err = createWeeklyPayrolls(queries, startTime, endTime)
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
-	logger.Info("Weekly payrolls created")
+	logger.Info("Earnings created")
 
 	logger.Info("Done")
 }
@@ -210,4 +223,97 @@ func createWeeklyPayrolls(queries *repo.Queries, startTime time.Time, endTime ti
 	}
 
 	return nil
+}
+
+func createEarnings(queries *repo.Queries, logger *slog.Logger) error {
+	workerIDs, _ := queries.GetWorkerIDs(context.TODO())
+	crewIDs, _ := queries.GetCrewIDs(context.TODO())
+	payrolls, _ := queries.GetPayrolls(context.TODO())
+
+	for _, p := range payrolls {
+		currentTime := p.PeriodStart.Time
+
+		newEarnings := []repo.CreateEarningsParams{}
+
+		// For each date in the payroll
+		for currentTime.Before(p.PeriodEnd.Time) {
+			crewID := crewIDs[rand.Intn(len(crewIDs))]
+
+			// Create earnings for each worker
+			for _, workerID := range workerIDs {
+				params, err := createEarningParams(currentTime, p.ID, workerID, crewID)
+				if err != nil {
+					return err
+				}
+				newEarnings = append(newEarnings, *params)
+			}
+
+			currentTime = currentTime.AddDate(0, 0, 1)
+		}
+
+		_, err := queries.CreateEarnings(context.TODO(), newEarnings)
+		if err != nil {
+			return err
+		}
+
+		logger.Info("created earnings for payroll", slog.Int64("payroll_id", p.ID))
+	}
+
+	return nil
+}
+
+func createEarningParams(currentTime time.Time, payrollID int64, workerID int64, crewID int64) (*repo.CreateEarningsParams, error) {
+	pieceWork := gofakeit.FlipACoin() == "Heads"
+
+	var amount pgtype.Numeric
+	err := amount.Scan(strconv.FormatFloat(gofakeit.Price(10, 500), 'f', 4, 32))
+	if err != nil {
+		return nil, err
+	}
+
+	var dateOfWork pgtype.Date
+	err = dateOfWork.Scan(currentTime)
+	if err != nil {
+		return nil, err
+	}
+
+	var hoursWorked pgtype.Numeric
+	if !pieceWork {
+		err = hoursWorked.Scan(strconv.FormatFloat(gofakeit.Float64Range(4, 12), 'f', 4, 32))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var hoursOffered pgtype.Numeric
+	if !pieceWork {
+		err = hoursWorked.Scan(strconv.FormatFloat(gofakeit.Float64Range(4, 12), 'f', 4, 32))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var pieceUnits pgtype.Numeric
+	if pieceWork {
+		err = pieceUnits.Scan(strconv.Itoa(rand.Intn(1000)))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var crewIDObj pgtype.Int8
+	if pieceWork {
+		crewIDObj.Scan(crewID)
+	}
+
+	return &repo.CreateEarningsParams{
+		Amount:       amount,
+		DateOfWork:   dateOfWork,
+		PayrollID:    payrollID,
+		WorkerID:     workerID,
+		CrewID:       crewIDObj,
+		HoursWorked:  hoursWorked,
+		HoursOffered: hoursOffered,
+		PieceUnits:   pieceUnits,
+	}, nil
 }

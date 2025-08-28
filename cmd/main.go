@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log/slog"
 	"math/rand"
 	"os"
@@ -229,7 +230,9 @@ func createEarnings(queries *repo.Queries, logger *slog.Logger) error {
 	crewIDs, _ := queries.GetCrewIDs(context.TODO())
 	payrolls, _ := queries.GetPayrolls(context.TODO())
 
-	for _, p := range payrolls {
+	numPayrolls := len(payrolls)
+
+	for i, p := range payrolls {
 		currentTime := p.PeriodStart.Time
 
 		newEarnings := []repo.CreateEarningsParams{}
@@ -255,7 +258,7 @@ func createEarnings(queries *repo.Queries, logger *slog.Logger) error {
 			return err
 		}
 
-		logger.Info("created earnings for payroll", slog.Int64("payroll_id", p.ID))
+		logger.Info(fmt.Sprintf("created earnings for payroll number %d of %d", i+1, numPayrolls), slog.Int("num_earnings", len(newEarnings)))
 	}
 
 	return nil

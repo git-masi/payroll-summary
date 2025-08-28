@@ -29,11 +29,11 @@ func main() {
 
 	numWorkers := 1
 	newWorkers := make([]repo.CreateWorkersParams, numWorkers)
-	for range numWorkers {
-		newWorkers = append(newWorkers, repo.CreateWorkersParams{
+	for n := range numWorkers {
+		newWorkers[n] = repo.CreateWorkersParams{
 			FirstName: gofakeit.FirstName(),
 			LastName:  gofakeit.LastName(),
-		})
+		}
 	}
 
 	_, err = queries.CreateWorkers(context.TODO(), newWorkers)
@@ -50,7 +50,6 @@ func connectDB(dsn string) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer dbpool.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

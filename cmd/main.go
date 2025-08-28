@@ -42,6 +42,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger.Info("Done")
 }
 
 func connectDB(dsn string) (*pgxpool.Pool, error) {

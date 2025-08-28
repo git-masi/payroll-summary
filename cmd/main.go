@@ -42,37 +42,16 @@ func main() {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
-
 	logger.Info("Crews created", slog.Int("num_crews", *numCrews))
 
 	startTime := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
 	endTime := startTime.AddDate(1, 0, 0)
-	currentTime := startTime
 
-	var newMonthlyPayrolls []repo.CreatePayrollsParams
-
-	for currentTime.Before(endTime) {
-		var start pgtype.Date
-		var end pgtype.Date
-
-		start.Scan(currentTime)
-		end.Scan(currentTime.AddDate(0, 1, 0).AddDate(0, 0, -1))
-
-		newMonthlyPayrolls = append(newMonthlyPayrolls, repo.CreatePayrollsParams{
-			PayPeriod:   repo.PayrollPayPeriodMonthly,
-			PeriodStart: start,
-			PeriodEnd:   end,
-		})
-
-		currentTime = currentTime.AddDate(0, 1, 0)
-	}
-
-	_, err = queries.CreatePayrolls(context.TODO(), newMonthlyPayrolls)
+	err = createMonthlyPayrolls(queries, startTime, endTime)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
-
 	logger.Info("Monthly payrolls created")
 
 	logger.Info("Done")
@@ -121,6 +100,35 @@ func addCrews(queries *repo.Queries, numCrews int) error {
 	}
 
 	_, err := queries.CreateCrews(context.TODO(), newCrews)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createMonthlyPayrolls(queries *repo.Queries, startTime time.Time, endTime time.Time) error {
+	currentTime := startTime
+
+	var newMonthlyPayrolls []repo.CreatePayrollsParams
+
+	for currentTime.Before(endTime) {
+		var start pgtype.Date
+		var end pgtype.Date
+
+		start.Scan(currentTime)
+		end.Scan(currentTime.AddDate(0, 1, 0).AddDate(0, 0, -1))
+
+		newMonthlyPayrolls = append(newMonthlyPayrolls, repo.CreatePayrollsParams{
+			PayPeriod:   repo.PayrollPayPeriodMonthly,
+			PeriodStart: start,
+			PeriodEnd:   end,
+		})
+
+		currentTime = currentTime.AddDate(0, 1, 0)
+	}
+
+	_, err := queries.CreatePayrolls(context.TODO(), newMonthlyPayrolls)
 	if err != nil {
 		return err
 	}

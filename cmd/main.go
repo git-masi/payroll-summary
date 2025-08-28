@@ -286,7 +286,7 @@ func createEarningParams(currentTime time.Time, payrollID int64, workerID int64,
 
 	var hoursOffered pgtype.Numeric
 	if !pieceWork {
-		err = hoursWorked.Scan(strconv.FormatFloat(gofakeit.Float64Range(4, 12), 'f', 4, 32))
+		err = hoursOffered.Scan(strconv.FormatFloat(gofakeit.Float64Range(4, 12), 'f', 4, 32))
 		if err != nil {
 			return nil, err
 		}
@@ -300,9 +300,9 @@ func createEarningParams(currentTime time.Time, payrollID int64, workerID int64,
 		}
 	}
 
-	var crewIDObj pgtype.Int8
+	var crew pgtype.Int8
 	if pieceWork {
-		crewIDObj.Scan(crewID)
+		crew.Scan(crewID)
 	}
 
 	return &repo.CreateEarningsParams{
@@ -310,7 +310,7 @@ func createEarningParams(currentTime time.Time, payrollID int64, workerID int64,
 		DateOfWork:   dateOfWork,
 		PayrollID:    payrollID,
 		WorkerID:     workerID,
-		CrewID:       crewIDObj,
+		CrewID:       crew,
 		HoursWorked:  hoursWorked,
 		HoursOffered: hoursOffered,
 		PieceUnits:   pieceUnits,

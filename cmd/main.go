@@ -54,6 +54,13 @@ func main() {
 	}
 	logger.Info("Monthly payrolls created")
 
+	err = createBiweeklyPayrolls(queries, startTime, endTime)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+	logger.Info("Biweekly payrolls created")
+
 	logger.Info("Done")
 }
 
@@ -129,6 +136,37 @@ func createMonthlyPayrolls(queries *repo.Queries, startTime time.Time, endTime t
 	}
 
 	_, err := queries.CreatePayrolls(context.TODO(), newMonthlyPayrolls)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createBiweeklyPayrolls(queries *repo.Queries, startTime time.Time, endTime time.Time) error {
+	currentTime := startTime
+
+	var newBiweeklyPayrolls []repo.CreatePayrollsParams
+
+	for currentTime.Before(endTime) {
+		twoWeeks := currentTime.AddDate(0, 0, 14)
+
+		var start pgtype.Date
+		var end pgtype.Date
+
+		start.Scan(currentTime)
+		end.Scan(twoWeeks)
+
+		newBiweeklyPayrolls = append(newBiweeklyPayrolls, repo.CreatePayrollsParams{
+			PayPeriod:   repo.PayrollPayPeriodBiweekly,
+			PeriodStart: start,
+			PeriodEnd:   end,
+		})
+
+		currentTime = twoWeeks
+	}
+
+	_, err := queries.CreatePayrolls(context.TODO(), newBiweeklyPayrolls)
 	if err != nil {
 		return err
 	}

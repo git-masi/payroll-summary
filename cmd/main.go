@@ -30,15 +30,7 @@ func main() {
 
 	queries := repo.New(dbpool)
 
-	newWorkers := make([]repo.CreateWorkersParams, *numWorkers)
-	for n := range *numWorkers {
-		newWorkers[n] = repo.CreateWorkersParams{
-			FirstName: gofakeit.FirstName(),
-			LastName:  gofakeit.LastName(),
-		}
-	}
-
-	_, err = queries.CreateWorkers(context.TODO(), newWorkers)
+	err = addWorkers(queries, *numWorkers)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -108,4 +100,22 @@ func connectDB(dsn string) (*pgxpool.Pool, error) {
 	}
 
 	return dbpool, nil
+}
+
+func addWorkers(queries *repo.Queries, numWorkers int) error {
+	newWorkers := make([]repo.CreateWorkersParams, numWorkers)
+	for n := range numWorkers {
+		newWorkers[n] = repo.CreateWorkersParams{
+			FirstName: gofakeit.FirstName(),
+			LastName:  gofakeit.LastName(),
+		}
+	}
+
+	_, err := queries.CreateWorkers(context.TODO(), newWorkers)
+	if err != nil {
+		return err
+
+	}
+
+	return nil
 }

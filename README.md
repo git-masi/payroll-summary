@@ -26,9 +26,17 @@ See the status of the migrations:
 tern status --migrations ./migrations --config ./migrations/tern.conf
 ```
 
-## SQLc gen
+### SQLc gen
 
 Generate Go code from queries:
 ```sh
 sqlc generate
+```
+
+## Run the program
+
+The program can create workers, crews, payrolls, and earnings. You can configure everything except earnings by passing in arguments like so:
+
+```sh
+go run ./cmd/... -dsn "postgres://postgres:postgres@localhost/postgres" -num_workers 0 -num_crews 0 -should_create_payrolls false
 ```

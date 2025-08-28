@@ -16,12 +16,19 @@ docker compose up -d
 
 ### Run migrations
 
-To run all migrations:
+Run all migrations:
 ```sh
 tern migrate --migrations ./migrations --config ./migrations/tern.conf
 ```
 
-To see the status of the migrations:
+See the status of the migrations:
 ```sh
 tern status --migrations ./migrations --config ./migrations/tern.conf
+```
+
+## SQLc gen
+
+Generate Go code from queries:
+```sh
+sqlc generate
 ```

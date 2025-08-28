@@ -42,6 +42,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger.Info("Workers created")
+
+	numCrews := 20
+	newCrews := make([]string, numCrews)
+	for n := range numCrews {
+		newCrews[n] = gofakeit.AdjectiveDescriptive() + " " + gofakeit.NounCommon()
+	}
+
+	_, err = queries.CreateCrews(context.TODO(), newCrews)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	logger.Info("Crews created")
+
 	logger.Info("Done")
 }
 

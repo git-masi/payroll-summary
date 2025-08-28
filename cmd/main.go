@@ -9,14 +9,17 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
-
-	dsn := flag.String("dsn", "", "postgresql dsn")
+	dsn := flag.String("dsn", "", "Postgres dsn")
+	numWorkers := flag.Int("num_workers", 1000, "Number of workers to add")
+	numCrews := flag.Int("num_crews", 20, "Number of workers to add")
 	flag.Parse()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
 
 	dbpool, err := connectDB(*dsn)
 	if err != nil {
@@ -27,9 +30,8 @@ func main() {
 
 	queries := repo.New(dbpool)
 
-	numWorkers := 1
-	newWorkers := make([]repo.CreateWorkersParams, numWorkers)
-	for n := range numWorkers {
+	newWorkers := make([]repo.CreateWorkersParams, *numWorkers)
+	for n := range *numWorkers {
 		newWorkers[n] = repo.CreateWorkersParams{
 			FirstName: gofakeit.FirstName(),
 			LastName:  gofakeit.LastName(),
@@ -42,11 +44,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("Workers created")
+	logger.Info("Workers created", slog.Int("num_workers", *numWorkers))
 
-	numCrews := 20
-	newCrews := make([]string, numCrews)
-	for n := range numCrews {
+	newCrews := make([]string, *numCrews)
+	for n := range *numCrews {
 		newCrews[n] = gofakeit.AdjectiveDescriptive() + " " + gofakeit.NounCommon()
 	}
 
@@ -56,7 +57,37 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("Crews created")
+	logger.Info("Crews created", slog.Int("num_crews", *numCrews))
+
+	startTime := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+	endTime := startTime.AddDate(1, 0, 0)
+	currentTime := startTime
+
+	var newMonthlyPayrolls []repo.CreatePayrollsParams
+
+	for currentTime.Before(endTime) {
+		var start pgtype.Date
+		var end pgtype.Date
+
+		start.Scan(currentTime)
+		end.Scan(currentTime.AddDate(0, 1, 0).AddDate(0, 0, -1))
+
+		newMonthlyPayrolls = append(newMonthlyPayrolls, repo.CreatePayrollsParams{
+			PayPeriod:   repo.PayrollPayPeriodMonthly,
+			PeriodStart: start,
+			PeriodEnd:   end,
+		})
+
+		currentTime = currentTime.AddDate(0, 1, 0)
+	}
+
+	_, err = queries.CreatePayrolls(context.TODO(), newMonthlyPayrolls)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	logger.Info("Monthly payrolls created")
 
 	logger.Info("Done")
 }

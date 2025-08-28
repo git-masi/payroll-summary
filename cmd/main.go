@@ -30,14 +30,14 @@ func main() {
 
 	queries := repo.New(dbpool)
 
-	err = addWorkers(queries, *numWorkers)
+	err = createWorkers(queries, *numWorkers)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
 	logger.Info("Workers created", slog.Int("num_workers", *numWorkers))
 
-	err = addCrews(queries, *numCrews)
+	err = createCre(queries, *numCrews)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -75,7 +75,7 @@ func connectDB(dsn string) (*pgxpool.Pool, error) {
 	return dbpool, nil
 }
 
-func addWorkers(queries *repo.Queries, numWorkers int) error {
+func createWorkers(queries *repo.Queries, numWorkers int) error {
 	newWorkers := make([]repo.CreateWorkersParams, numWorkers)
 	for n := range numWorkers {
 		newWorkers[n] = repo.CreateWorkersParams{
@@ -93,7 +93,7 @@ func addWorkers(queries *repo.Queries, numWorkers int) error {
 	return nil
 }
 
-func addCrews(queries *repo.Queries, numCrews int) error {
+func createCre(queries *repo.Queries, numCrews int) error {
 	newCrews := make([]string, numCrews)
 	for n := range numCrews {
 		newCrews[n] = gofakeit.AdjectiveDescriptive() + " " + gofakeit.NounCommon()

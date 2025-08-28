@@ -48,7 +48,6 @@ func main() {
 	logger.Info("Crews created", slog.Int("num_crews", *numCrews))
 
 	if *shouldCreatePayrolls {
-
 		startTime := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
 		endTime := startTime.AddDate(1, 0, 0)
 

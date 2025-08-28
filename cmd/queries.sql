@@ -14,3 +14,23 @@ INSERT INTO payrolls(pay_period, period_start, period_end)
 INSERT INTO earnings(amount, date_of_work, payroll_id, worker_id, crew_id, hours_worked, hours_offered, piece_units)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 
+-- name: GetWorkerIDs :many
+SELECT
+    id
+FROM
+    workers;
+
+-- name: GetCrewIDs :many
+SELECT
+    id
+FROM
+    crews;
+
+-- name: GetPayrolls :many
+SELECT
+    id,
+    period_start,
+    period_end
+FROM
+    payrolls;
+

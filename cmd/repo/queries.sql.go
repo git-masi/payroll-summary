@@ -6,6 +6,8 @@
 package repo
 
 import (
+	"context"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -29,4 +31,93 @@ type CreatePayrollsParams struct {
 type CreateWorkersParams struct {
 	FirstName string
 	LastName  string
+}
+
+const getCrewIDs = `-- name: GetCrewIDs :many
+SELECT
+    id
+FROM
+    crews
+`
+
+func (q *Queries) GetCrewIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getCrewIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPayrolls = `-- name: GetPayrolls :many
+SELECT
+    id,
+    period_start,
+    period_end
+FROM
+    payrolls
+`
+
+type GetPayrollsRow struct {
+	ID          int64
+	PeriodStart pgtype.Date
+	PeriodEnd   pgtype.Date
+}
+
+func (q *Queries) GetPayrolls(ctx context.Context) ([]GetPayrollsRow, error) {
+	rows, err := q.db.Query(ctx, getPayrolls)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPayrollsRow
+	for rows.Next() {
+		var i GetPayrollsRow
+		if err := rows.Scan(&i.ID, &i.PeriodStart, &i.PeriodEnd); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWorkerIDs = `-- name: GetWorkerIDs :many
+SELECT
+    id
+FROM
+    workers
+`
+
+func (q *Queries) GetWorkerIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getWorkerIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

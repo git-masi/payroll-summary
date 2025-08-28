@@ -35,15 +35,9 @@ func main() {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
-
 	logger.Info("Workers created", slog.Int("num_workers", *numWorkers))
 
-	newCrews := make([]string, *numCrews)
-	for n := range *numCrews {
-		newCrews[n] = gofakeit.AdjectiveDescriptive() + " " + gofakeit.NounCommon()
-	}
-
-	_, err = queries.CreateCrews(context.TODO(), newCrews)
+	err = addCrews(queries, *numCrews)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -115,6 +109,20 @@ func addWorkers(queries *repo.Queries, numWorkers int) error {
 	if err != nil {
 		return err
 
+	}
+
+	return nil
+}
+
+func addCrews(queries *repo.Queries, numCrews int) error {
+	newCrews := make([]string, numCrews)
+	for n := range numCrews {
+		newCrews[n] = gofakeit.AdjectiveDescriptive() + " " + gofakeit.NounCommon()
+	}
+
+	_, err := queries.CreateCrews(context.TODO(), newCrews)
+	if err != nil {
+		return err
 	}
 
 	return nil

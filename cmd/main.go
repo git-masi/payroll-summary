@@ -295,7 +295,7 @@ func createEarningParams(currentTime time.Time, payrollID int64, workerID int64,
 
 	var pieceUnits pgtype.Numeric
 	if pieceWork {
-		err = pieceUnits.Scan(strconv.Itoa(rand.Intn(1000)))
+		err = pieceUnits.Scan(strconv.FormatFloat(gofakeit.Float64Range(100, 1000), 'f', 4, 32))
 		if err != nil {
 			return nil, err
 		}

@@ -66,6 +66,9 @@ func (r iteratorForCreateEarnings) Values() ([]interface{}, error) {
 		r.rows[0].PayrollID,
 		r.rows[0].WorkerID,
 		r.rows[0].CrewID,
+		r.rows[0].HoursWorked,
+		r.rows[0].HoursOffered,
+		r.rows[0].PieceUnits,
 	}, nil
 }
 
@@ -74,7 +77,7 @@ func (r iteratorForCreateEarnings) Err() error {
 }
 
 func (q *Queries) CreateEarnings(ctx context.Context, arg []CreateEarningsParams) (int64, error) {
-	return q.db.CopyFrom(ctx, []string{"earnings"}, []string{"amount", "date_of_work", "payroll_id", "worker_id", "crew_id"}, &iteratorForCreateEarnings{rows: arg})
+	return q.db.CopyFrom(ctx, []string{"earnings"}, []string{"amount", "date_of_work", "payroll_id", "worker_id", "crew_id", "hours_worked", "hours_offered", "piece_units"}, &iteratorForCreateEarnings{rows: arg})
 }
 
 // iteratorForCreatePayrolls implements pgx.CopyFromSource.

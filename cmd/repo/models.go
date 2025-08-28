@@ -104,12 +104,15 @@ type Crew struct {
 }
 
 type Earning struct {
-	ID         int64
-	Amount     pgtype.Numeric
-	DateOfWork pgtype.Date
-	PayrollID  int64
-	WorkerID   int64
-	CrewID     pgtype.Int8
+	ID           int64
+	Amount       pgtype.Numeric
+	DateOfWork   pgtype.Date
+	PayrollID    int64
+	WorkerID     int64
+	CrewID       pgtype.Int8
+	HoursWorked  pgtype.Numeric
+	HoursOffered pgtype.Numeric
+	PieceUnits   pgtype.Numeric
 }
 
 type Payroll struct {

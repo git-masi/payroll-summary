@@ -10,11 +10,14 @@ import (
 )
 
 type CreateEarningsParams struct {
-	Amount     pgtype.Numeric
-	DateOfWork pgtype.Date
-	PayrollID  int64
-	WorkerID   int64
-	CrewID     pgtype.Int8
+	Amount       pgtype.Numeric
+	DateOfWork   pgtype.Date
+	PayrollID    int64
+	WorkerID     int64
+	CrewID       pgtype.Int8
+	HoursWorked  pgtype.Numeric
+	HoursOffered pgtype.Numeric
+	PieceUnits   pgtype.Numeric
 }
 
 type CreatePayrollsParams struct {

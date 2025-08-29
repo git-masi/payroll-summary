@@ -232,25 +232,41 @@ func createEarnings(queries *repo.Queries, logger *slog.Logger) error {
 
 	numPayrolls := len(payrolls)
 
-	for i, p := range payrolls {
-		currentTime := p.PeriodStart.Time
+	getCrewID := func(pieceWork bool) int64 {
+		if !pieceWork {
+			return -1
+		}
 
+		return crewIDs[rand.Intn(len(crewIDs))]
+	}
+
+	for i, p := range payrolls {
+		// It is possible to assemble one massive slice outside of the payrolls for loop rather than
+		// recreating the slice on every iteration.
+		// However, trying to send all the data to Postgres at the end seems to be slower than sending
+		// a more steady stream of data throughout.
 		newEarnings := []repo.CreateEarningsParams{}
 
-		// For each date in the payroll
-		for currentTime.Before(p.PeriodEnd.Time) {
-			crewID := crewIDs[rand.Intn(len(crewIDs))]
+		// Create earnings for each worker
+		for _, workerID := range workerIDs {
+			currentTime := p.PeriodStart.Time
 
-			// Create earnings for each worker
-			for _, workerID := range workerIDs {
-				params, err := createEarningParams(currentTime, p.ID, workerID, crewID)
+			pieceWork := gofakeit.FlipACoin() == "Heads"
+			// For a given payroll each worker can be in 0 or 1 crew.
+			// Across payrolls each worker can be in many crews.
+			crewID := getCrewID(pieceWork)
+
+			// For each date in the payroll
+			for currentTime.Before(p.PeriodEnd.Time) {
+				params, err := createEarningParams(currentTime, p.ID, workerID, crewID, pieceWork)
 				if err != nil {
 					return err
 				}
-				newEarnings = append(newEarnings, *params)
-			}
 
-			currentTime = currentTime.AddDate(0, 0, 1)
+				newEarnings = append(newEarnings, *params)
+
+				currentTime = currentTime.AddDate(0, 0, 1)
+			}
 		}
 
 		_, err := queries.CreateEarnings(context.TODO(), newEarnings)
@@ -264,9 +280,7 @@ func createEarnings(queries *repo.Queries, logger *slog.Logger) error {
 	return nil
 }
 
-func createEarningParams(currentTime time.Time, payrollID int64, workerID int64, crewID int64) (*repo.CreateEarningsParams, error) {
-	pieceWork := gofakeit.FlipACoin() == "Heads"
-
+func createEarningParams(currentTime time.Time, payrollID int64, workerID int64, crewID int64, pieceWork bool) (*repo.CreateEarningsParams, error) {
 	var amount pgtype.Numeric
 	err := amount.Scan(strconv.FormatFloat(gofakeit.Price(10, 500), 'f', 4, 32))
 	if err != nil {
